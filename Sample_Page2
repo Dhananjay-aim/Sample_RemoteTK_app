@@ -1,0 +1,598 @@
+<apex:page docType="html-5.0"
+           showHeader="false" sidebar="false" standardController="Contact" >
+           
+           <!-- standardController="Medicine__c"  extensions="RemoteTKController" -->
+   
+    <apex:stylesheet value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'jquery.mobile-1.3.0.min.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'jquery-1.9.1.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'jquery.mobile-1.3.0.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'cordova.force.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'backbone/underscore-1.4.4.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'force.entity.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'SObjectData.js')}"/>
+     
+    <!-- apex:remoteObjects >
+    <apex:remoteObjectModel name="Medicine__c" fields="Id,name,Dose__c,Contact__c"/>
+    </apex:remoteObjects -->
+     
+    
+    <head>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0; user-scalable=no" />
+     <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+       <title>Contacts</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+       <c:RemoteTK /> 
+        
+        <script type="text/javascript">
+            var $j = jQuery.noConflict(); 
+            var client = new remotetk.Client();
+            Force.init(null,null,client,null);
+            
+            var Contacts = new SObjectData();
+            Contacts.errorHandler = displayError;
+            
+            
+            var medicine = new SObjectData();
+            medicine.errorHandler = displayError;
+                        
+            $j(document).ready(function() {
+                regBtnClickHandlers();
+                getAllContacts();
+                getAllmedicines();
+            });
+           
+            function getAllContacts() {
+                Contacts.fetch('soql','SELECT id, firstName, lastName, phone,Email,Picture__c from Contact LIMIT 50 ',function() {
+                   showContacts(Contacts.data());
+                });
+            }
+            
+           
+           /* 
+            function getAllContacts() {
+                remotetk.Client.prototype.query('soql','SELECT id, firstName, lastName, phone,Email,Picture__c,Contact__c,Contact__r.Name from Contact LIMIT 100 ',function() {
+                   showContacts(Contacts.data());
+                });
+            }
+           */ 
+          
+                
+           function getAllmedicines2() {
+                  var cId = $j('#contactId').val();
+                  
+                  medicine.fetch('soql','SELECT id, name, dose__c, Add_feedback__c, Contact__c,Contact__r.Name from Medicine__c LIMIT 100',function() {
+                  showMedicine(medicine.data());
+                });
+            }
+            
+           function getAllmedicines() {
+                  var cId = $j('#contactId').val();
+                  var amd =  medicine.fetch('soql','SELECT id, name, dose__c, Add_feedback__c, Contact__c,Contact__r.Name from Medicine__c LIMIT 100',function() {
+            
+                  
+                  showMedicine(medicine.data());
+                 
+                });
+            } 
+          /*
+             function getAllmedicines1() {
+                  var cId = $j('#contactId').val();
+                 
+                  console.log('@@@@@@'+cId);
+                  remotetk.Client.prototype.query('SELECT  id, name, dose__c, Add_feedback__c, Contact__c,Contact__r.Name from Medicine__c ',function(){
+                     showMedicine();
+                     },onErrorSfdc);
+            }
+          */ 
+                
+            function showContacts(records) {    
+                $j('#cList').empty();
+                $j.each(Contacts.data(),
+                    function() {
+                    var newLi = $j('<li></li>');
+                    //var newLi = $j('<li class="table-view-cell"><div class="media-body"></div></li>');
+                                
+                   var newLink = $j('<a id="' +this.Id+ '" data-transition="slidefade">' +this.FirstName+ ' '+this.LastName+  '</a>');
+                   // var newLink = $j( '<div class="thumbs"> <a href="#" class="thumb thumb-1"><img class="thumb" src="images/icons/tile-phone.png" ></a> <a href="#" class="thumb thumb-2"><img class="thumb" src="images/icons/tile-email.png" ></a> <img class="thumb thumb-3" src='+this.Picture__c+'/> </div>' +'<a  class="content" id="' +this.Id+ '" data-transition="flip"> <h2>' +this.FirstName+ ' '+this.LastName+ '</h2> <div class="list-view-icons"> <span class="icon-right-arrow">&nbsp;</span> </div></a>');
+                   // var newLink = $j('<a id="' +this.Id+ '" data-transition="flip">'+'<img class="myListimage" src='+this.Picture__c+'></img>' +this.FirstName+ ' '+this.LastName+ '</a>');
+                    
+                    newLink.click(function(e) {
+                        e.preventDefault();
+                        $j.mobile.showPageLoadingMsg();
+                        $j('#fName').val(Contacts.findRecordById([this.id]).FirstName);
+                        $j('#lName').val(Contacts.findRecordById([this.id]).LastName);
+                        $j('#phone').val(Contacts.findRecordById([this.id]).Phone);
+                        $j('#email').val(Contacts.findRecordById([this.id]).Email);
+                        $j('#pic').val(Contacts.findRecordById([this.id]).Picture__c);
+                        $j('#contactId').val(Contacts.findRecordById([this.id]).Id);
+                        //$j('#contactId').val(medicine.Contact__c);
+                        $j('#error').html('');
+                       
+                        $j.mobile.changePage('#detailpage', {changeHash: true});
+                    });
+                    newLi.append(newLink);            
+                    newLi.appendTo('#cList');
+                  //  x++;
+                  });
+                
+                $j.mobile.hidePageLoadingMsg();
+                $j('#cList').listview('refresh');
+            }
+            
+            
+            function showMedicine(records) {    
+                
+                  // var medCon = $j('#contactName').val(medicine.findRecordById([this.id]).Contact__c);
+                  // var conId = $j('#contactId').val();
+                    
+                $j('#mList').empty();
+                $j.each(medicine.data(),
+                    
+                   
+                    function() {
+                    
+                    var newLi = $j('<li></li>');
+                    var newLink2 = $j('<a id="' +this.Id+ '" data-direction="forward"'+' data-transition="slidefade" >' +this.Name +  '</a>');
+                   
+                    
+                    newLink2.click(function(e) {
+                    
+                        e.preventDefault();
+                        $j.mobile.showPageLoadingMsg();
+                        $j('#mName').val(medicine.findRecordById([this.id]).Name);
+                        $j('#mDose').val(medicine.findRecordById([this.id]).Dose__c);
+                        $j('#contactId').val(medicine.findRecordById([this.id]).Contact__c);
+                        $j('#contactName').val(medicine.findRecordById([this.id]).Contact__r.Name);
+                        $j('#addFB').val(medicine.findRecordById([this.id]).Add_feedback__c);
+                        //$j('#medicineId').val(medicine.findRecordById([this.id]).Id);
+                        $j('#error').html('');
+                       
+                        $j.mobile.changePage('#medicinedetailpage', {changeHash: true});
+                      // $j.mobile.changePage('#medListpage', {changeHash: true});
+                      
+                    });
+                   
+                    newLi.append(newLink2);            
+                    newLi.appendTo('#mList');
+                  //  x++;
+                  
+                   
+                  }
+                
+                  );
+                  
+                $j.mobile.hidePageLoadingMsg();
+                $j('#mList').listview('refresh');
+            } 
+            
+                  
+        
+            function addUpdateContact(e){
+                e.preventDefault();
+                var cId = $j('#contactId').val();
+                var record = Contacts.findRecordById(cId);
+                if(record == null) { //new record
+                    record = Contacts.create();
+                } 
+                record.FirstName = $j('#f1Name').val();
+                record.LastName = $j('#l1Name').val();
+                record.Phone = $j('#phone1').val();
+                //record.Email = $j('#email').val();
+                console.log('*****'+record.LastName);
+                Contacts.sync(record,successCallback);
+                
+            }
+            
+          /*  function addUpdateDose(e){
+                 
+                e.preventDefault();
+                var cId = $j('#contactId').val();
+                var mId= $j('#medicineId').val();
+                var mName =  $j('#medicinename').val();
+                var mdose = $j('#dose').val();
+                console.log('&&&*&&&&&&&*&'+cId+'***&*&*&*&*'+mId);
+                var record = medicine.findRecordById(mId);
+                if(record == null) { //new record
+                    record = medicine.updat();
+                    console.log('test');
+                } 
+               
+                record.Name = $j('#medicinename').val();
+                record.Dose__c = $j('#dose').val();
+                record.Patient__c = cId;
+                medicine.sync(record,successCallback2);
+                
+            }
+          */ 
+           
+           function addUpdateDose(e){
+                 
+                e.preventDefault();
+               // var onErrorSfdc = 'errMsg';
+                var cId = $j('#contactId').val();
+                var mId= $j('#medicineId').val();
+                var mName =  $j('#medicinename').val();
+                var mdose = $j('#dose').val();
+                console.log('&&&*&&&&&&&*&'+cId+'***&*&*&*&*'+mId);
+                var record = medicine.findRecordById(mId);
+                if(record == null) { 
+                    remotetk.Client.prototype.create('Medicine__c',{
+                     "Name" : mName,
+                     "Dose__c" : mdose,
+                     "Contact__c" : cId
+                     
+                     },function(record){
+                     console.log("Create record Sucessfully");
+                     medicine.sync(record,successCallback2);
+                     },onErrorSfdc);
+                    console.log('test');
+                } 
+                              
+            }
+            
+           
+           
+           function updateFBDose(e){
+                e.preventDefault();
+                //var onErrorSfdc = 'errMsg';
+                var cId = $j('#contactId').val();
+                var mId= $j('#medicineId').val();
+                var mFB = $j('#addFB').val();
+                var record = medicine.findRecordById(mId);
+                
+                remotetk.Client.prototype.update('Medicine__c',mId,{
+                     "Add_feedback__c" : mFB
+ 
+                     },function(record){
+                     console.log("Updated record Sucessfully");
+                     medicine.sync(record,successCallback2);
+                     },onErrorSfdc);
+                    console.log('@@updatetest');
+           
+           }
+         
+        
+            function deleteContact(e){
+                e.preventDefault();
+                Contacts.remove(Contacts.findIndexById($j('#contactId').val()),successCallback);
+            }
+            
+            function successCallback(r){
+                getAllContacts();
+                //getAllmedicines();
+                $j.mobile.changePage('#listpage', {changeHash: true});
+            }
+            
+            function successCallback2(r){
+                //getAllContacts();
+                getAllmedicines();
+                $j.mobile.changePage('#medListpage', {changeHash: true});
+            }
+        
+            function displayError(e){
+                console.log(e);
+                $j('#error').html(e[0].message);
+            }
+        
+            function regBtnClickHandlers() {
+                $j('#add').click(function(e) {
+                    e.preventDefault();
+                    $j.mobile.showPageLoadingMsg();
+                    $j('#f1Name').val('');
+                    $j('#l1Name').val('');
+                    $j('#phone1').val('');
+                    $j('#email1').val('');
+                    $j('#pic').val('');
+                    $j('#error').html('');
+                    $j('#contactId').val('');
+                    $j.mobile.changePage('#detail', {changeHash: true});
+                    $j.mobile.hidePageLoadingMsg();            
+                });
+                $j('#newDose').click(function(e) {
+                    e.preventDefault();
+                    $j.mobile.showPageLoadingMsg();
+                    $j('#medicinename').val('');
+                    $j('#dose').val('');
+                    $j.mobile.changePage('#addDose', {changeHash: true});
+                    $j.mobile.hidePageLoadingMsg();            
+                });
+                  
+                $j('#savedose').click(function(e) {
+                   addUpdateDose(e);
+                  // getAllmedicines();
+                  // $j.mobile.changePage('#medListpage', {changeHash: true}); 
+                });
+                
+                $j('#saveFB').click(function(e) {
+                   updateFBDose(e); 
+                  // getAllmedicines();
+                  // $j.mobile.changePage('#medListpage', {changeHash: true});  
+                });
+                
+                $j('#save').click(function(e) {
+                   addUpdateContact(e);
+                });
+        
+                $j('#delete').click(function(e) {
+                   deleteContact(e);
+                });
+                
+                $j('#alertmsg').click(function(e) {
+                   alertFunc(e);
+                });
+            }
+            
+            function alertFunc(){
+              var $j = jQuery.noConflict();
+              var cId = $j('#contactId').val();
+              var mId= $j('#medicineId').val();
+              var amd =  medicine.fetch('soql','SELECT id, name, dose__c, Add_feedback__c, Contact__c,Contact__r.Name from Medicine__c LIMIT 100',function() {});
+                alert('THis is it'+ cId + mId);
+            }
+            
+            function onErrorSfdc(error) {
+                var $j = jQuery.noConflict();
+            
+                $j.mobile.hidePageLoadingMsg();
+                cordova.require("salesforce/util/logger").logToConsole("onErrorSfdc: " + JSON.stringify(error));
+                alert(JSON.stringify(error));
+            }
+            
+        </script>    
+    </head>
+
+    <body> 
+       
+       <!-- Splash screen 
+       <div data-role="page" data-theme="b" id="splashpage">
+      <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <div class="splash-screen-wrapper">
+            <div class="content">
+                <div class="logo">
+                   <img src="{!URLFOR($Resource.vfimagetest)}" width="315" height="400" />
+                </div>
+                <div class="tagline">
+                  <p>  Doc Connect App </p>
+                </div>
+            </div>
+            <a href="#listpage" class="enter_link">Enter App</a>
+        </div>
+       
+       </div> -->
+    
+        <!-- CONTACT LIST PAGE -->
+        <div data-role="page" data-theme="b" id="listpage"> 
+            <div data-role="header" data-position="fixed">
+                <h2>My Contact</h2>
+              <!--  <a href='#' id="add" class='ui-btn-right' data-icon='add' data-theme="b" >Add Patient</a>
+                  <a href='#' id="newDose" class='ui-btn-right' data-icon='add' data-theme="b">Add New Dose</a> -->
+            </div>
+            <div data-role="content" id="contactList">            
+               <ul id="cList" data-filter="true" data-inset="true" data-role="listview" data-transition="slidefade"
+                    data-theme="c" data-dividertheme="b">
+                    
+                </ul>
+            </div>
+        </div>
+        
+        
+        
+       <!-- CONTACT DETAIL PAGE -->
+        <div data-role="page" data-theme="b" id="detailpage">
+          <!--panel-->
+          <div data-role="panel" id="mypanel" data-swipe-close="true" data-display="push" data-theme="a">
+              <ul data-role="listview" >
+              <li data-icon="user" data-theme="a" ></li>
+              <li data-theme="a"><a href="#listpage" >Home Page</a></li>
+              <li data-theme="a"><a href="#medListpage" >Medicine List Page</a></li>
+              <li data-theme="a"><a href="#editContact" >Edit Contact</a></li>
+             <!-- <li data-icon="delete" data-theme="a" ><a href="#detailpage" data-rel="close"> Close</a></li> -->
+              </ul>
+          </div>    
+          <!--panel ends-->
+          <div data-role="header" >
+                <a href='#listpage' id="back2ContactList" class='ui-btn-left' data-icon='back' data-direction="reverse" data-transition="flip"></a>
+                <h1>My Profile Details</h1>
+                <input type="hidden" id="contactId" />
+              <!--   <a href='#editContact' id="editContact" class='ui-btn-center' data-direction="forward" data-icon='edit'></a> -->
+                <a href='#mypanel' id="goToPanel" class='ui-btn-right' data-icon='grid' ></a>
+              <!-- <div id="main-menu-button-right" class="main-menu-button main-menu-button-right" >
+                <a href='#' id="newDose" class='gear' ></a> </div> -->
+            </div>
+             
+              
+            <div data-role="content" >
+                <div data-role="fieldcontain">
+                    <label for="fName"><b>First Name:</b></label><br/>
+                    <output name="fName" id="fName" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="lName"><b>Last Name:</b></label><br/>
+                    <output name="lName" id="lName" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="phone"><b>Phone:</b></label><br/>
+                    <output name="phone" id="phone" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="email"><b>Email:</b></label><br/>
+                    <output name="email" id="email" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="pic"><b>Picture:</b></label><br/>
+                    <output type="outputField" name="pic" id="pic" />
+                   
+                   <!-- - <li><a href="#"><img src="https://c.ap2.content.force.com/servlet/rtaImage?eid=0032800000TICmn&feoid=00N2800000CWLqh&refid=0EM280000001Qxf"/></a></li> -->
+                </div>
+                <h2 style="color:red" id="error"></h2><br/>
+                <output type="hidden" id="contactId" />
+                <p><a href='#medListpage' id="go2MedcineList" class="ui-btn ui-shadow ui-corner-all" data-theme="b" data-direction="forward" data-transition="slidedown">Medicine Details</a></p>
+            </div>  
+            
+               <button id="alertmsg" data-role="button" data-icon="check" data-inline="true" data-theme="b" class="save">AlertButton</button>
+               <div>
+                <output type="hidden" id="contactId" />
+               <!-- <a href='#' id="alertmsg" class='ui-btn' data-icon='arrow-l' data-direction="forward" data-transition="flip">AlertButton</a> 
+               <button id="" data-role="button" data-icon="check" data-inline="true" data-theme="b" class="save">AlertButton</button>-->
+            </div>
+             
+            <!--  <div  data-role="content" id="MedicineList">            
+               <ul id="mList" data-inset="true" data-role="listview"  data-theme="c" data-dividertheme="b"> </ul>
+              </div> -->
+               
+        </div>  
+        
+        
+        <!-- EDIT PROFILE/CONTACT PAGE START  -->
+          <div data-role="page" data-theme="b" id="editContact">
+            <div data-role="header" data-position="fixed">
+                <a href='#detailpage' id="back2ContactList" class='ui-btn-left' data-icon='arrow-l' data-direction="reverse" data-transition="flip">Back</a>
+                <h1>Edit Profile</h1>
+                <input type="hidden" id="contactId" />
+            </div>
+            <div data-role="content" >
+                <div data-role="fieldcontain">
+                    <label for="fName"><b>First Name:</b></label><br/>
+                    <input type="text" placeholder="!fName" name="fName" id="fName" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="lName"><b>Last Name:</b></label><br/>
+                    <input name="lName" id="lName" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="phone"><b>Phone:</b></label><br/>
+                    <input name="phone" id="phone" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="email"><b>Email:</b></label><br/>
+                    <input name="email" id="email" />
+                </div>
+            </div>
+              <button id="" data-role="button" data-icon="check" data-inline="true" data-theme="b" class="save">AlertButton</button>
+             
+           </div>
+        <!-- EDIT PROFILE/CONTACT PAGE ENDS-->
+        
+        <!-- Medicine list page -->
+         <div data-role="page" data-theme="b" id="medListpage" style="padding-top: 44px; min-height: 687px;">
+           <div data-role="header" data-position="fixed">
+                <a href='#detailpage' id="back2ContactList" class='ui-btn-left' data-icon='arrow-l' data-direction="reverse" data-transition="flip">Back</a>
+                <h1>Medicine List Details</h1>
+                <input type="hidden" id="contactId" />
+              <!--  <a href='#' id="newDose" class='ui-btn-right' data-icon='arrow-1' data-theme="b" >Add New Medication</a> -->
+              <!-- <div id="main-menu-button-right" class="main-menu-button main-menu-button-right" >
+                <a href='#' id="newDose" class='gear' ></a> </div> -->
+            </div>
+              
+           <div  data-role="content" id="MedicineList">            
+               <ul id="mList" data-inset="true" data-role="listview"  data-theme="b" data-dividertheme="a" class="ui-listview"  data-split-icon="delete" > 
+                   <li data-role="list-divider">Medicine Details</li>
+               </ul>
+              </div>
+         </div>
+         <!-- Medicine List Pages -->
+        
+        
+        <!-- NEW CONTACT ADD PAGE -->
+        <!--  New Redirection for the Add Contact page Structure -->
+        <div data-role="page" data-theme="b" id="detail">
+            <div data-role="header" data-position="fixed">
+                <a href='#listpage' id="back2ContactList" class='ui-btn-left' data-icon='arrow-l' data-direction="reverse" data-transition="flip">Back</a>
+                <h1>New Contact</h1>
+            </div>
+            <div data-role="content" >
+                <div data-role="fieldcontain">
+                    <label for="f1Name"><b>First Name:</b></label>
+                    <input name="f1Name" id="f1Name" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="l1Name"><b>Last Name:</b></label>
+                    <input name="l1Name" id="l1Name" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="phone1"><b>Phone:</b></label>
+                    <input name="phone1" id="phone1" />
+                </div>
+                
+                <h2 style="color:red" id="error"></h2><br/>
+                <input type="hidden" id="contactId" />
+                <button id="save" data-role="button" data-icon="check" data-inline="true" data-theme="b" class="save">Save</button>
+                <button id="delete" data-role="button" data-icon="delete" data-inline="true" class="destroy">Delete</button>
+                
+            </div>    
+        </div> 
+        
+       <!--  New Redirection for the Add New Dose for a contact page Structure -->
+       <div data-role="page" data-theme="b" id="addDose">
+            <div data-role="header" data-position="fixed">
+                <a href='#medListpage' id="back2ContactList" class='ui-btn-left' data-icon='arrow-l' data-direction="reverse" data-transition="flip">Back</a>
+                <h1>New Dose</h1>
+            </div>
+            <div data-role="content" >
+                <div data-role="fieldcontain">
+                    <label for="medicinename"><b>Medicine Name:</b></label>
+                    <input name="medicinename" id="medicinename" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="dose"><b>Dose</b></label>
+                    <input name="dose" id="dose" />
+                </div>
+                <input type="hidden" id="medicineId" />
+                <button id="savedose" data-role="button" data-icon="check" data-inline="true" data-theme="b" class="save">Save</button>
+            <h2 style="color:red" id="error"></h2><br/> 
+            </div> 
+              
+        </div> 
+        
+        
+        <!--  New Redirection for Medicine detail page-->
+        <div data-role="page" data-theme="b" id="medicinedetailpage">
+            <div data-role="header" data-position="fixed">
+                <a href='#medListpage' id="back2ContactList" class='ui-btn-left' data-icon='arrow-l'  data-transition="flip">Back</a>
+                <h1>Medicine Details</h1>
+               <!-- <input type="hidden" id="medicineId" /> -->
+                </div>
+            <div data-role="content" >
+                <div data-role="fieldcontain">
+                    <label for="mName"><b>Medicine Name:</b></label><br/>
+                    <output name="mName" id="mName" />
+                </div>
+                <div data-role="fieldcontain">
+                    <label for="mDose"><b>Dosage Detail:</b></label><br/>
+                    <output name="mDose" id="mDose" />
+                </div>
+                
+                <div data-role="fieldcontain">
+                    <label for="contactName"><b>Contact Name:</b></label><br/>
+                    <output name="contactName" id="contactName" />
+                </div>
+                
+              <!--   <div data-role="fieldcontain">
+                    <label for="addFB"><b>Pateints Feedback</b></label><br/>
+                    <output name="addFB" id="addFB" />
+                </div>
+               -->  
+                    <div data-role="fieldcontain">
+                    <label for="addFB"> <h3>Add Feedback</h3> </label><br/>
+                    <div class="form-control-group">
+                    <div class="form-control form-control-textarea">
+                    <textarea type="text" name="addFB" id="addFB" > </textarea>
+                    </div>
+                    </div>
+                </div> 
+                
+                <input type="hidden" id="medicineId" />
+                
+                <button id="saveFB" data-role="button"  data-icon="check" data-inline="true" data-theme="b" class="save">Save</button>
+              
+                
+                <h2 style="color:red" id="error"></h2><br/>
+                <input type="hidden" id="medicineId" />
+                
+            </div> 
+            
+               
+        </div> 
+        
+    </body>    
+</apex:page>
